@@ -1,0 +1,57 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}<title>Уведомления</title>{% endblock %}
+
+{% block content %}
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1 class="h3 mb-0">Уведомления</h1>
+        <form method="post">
+            {% csrf_token %}
+            <button class="btn btn-outline-secondary btn-sm" type="submit">Прочитать все</button>
+        </form>
+    </div>
+
+    {% if notifications %}
+        <div class="list-group">
+            {% for notification in notifications %}
+                <div class="list-group-item d-flex justify-content-between align-items-start {% if not notification.is_read %}list-group-item-primary{% endif %}">
+                    <div>
+                        <div class="fw-semibold">{{ notification.message }}</div>
+                        <div class="text-muted small">
+                            {{ notification.created_at }} ·
+                            {{ notification.alert.item.share.name }}
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2 align-items-center">
+                        {% if notification.is_read %}
+                            <span class="badge bg-secondary">прочитано</span>
+                        {% else %}
+                            <form method="post" action="{% url 'watchlist:notification-read' notification.pk %}">
+                                {% csrf_token %}
+                                <button class="btn btn-sm btn-outline-primary" type="submit">Отметить</button>
+                            </form>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        {% if page_obj.paginator.num_pages > 1 %}
+            <nav class="mt-3">
+                <ul class="pagination">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">«</a></li>
+                    {% endif %}
+                    <li class="page-item disabled"><span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span></li>
+                    {% if page_obj.has_next %}
+                        <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">»</a></li>
+                    {% endif %}
+                </ul>
+            </nav>
+        {% endif %}
+    {% else %}
+        <div class="alert alert-secondary">
+            Уведомлений нет. Они появятся, когда цена достигнет заданного уровня.
+        </div>
+    {% endif %}
+{% endblock %}

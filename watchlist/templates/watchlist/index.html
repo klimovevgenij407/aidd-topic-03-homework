@@ -1,0 +1,46 @@
+{% extends "dashboard/base.html" %}
+{% load crispy_forms_tags %}
+
+{% block title %}<title>Списки наблюдения</title>{% endblock %}
+
+{% block content %}
+    <h1 class="h3 mb-3">Списки наблюдения</h1>
+
+    <div class="row g-4">
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-body">
+                    <h2 class="h5">Новый список</h2>
+                    <form method="post">
+                        {% csrf_token %}
+                        {{ form|crispy }}
+                        <button class="btn btn-primary" type="submit">Создать</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-8">
+            {% if watchlists %}
+                <div class="list-group">
+                    {% for watchlist in watchlists %}
+                        <a href="{% url 'watchlist:detail' watchlist.pk %}"
+                           class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="fw-semibold">{{ watchlist.name }}</div>
+                                <div class="text-muted small">
+                                    Акций: {{ watchlist.item_count }} ·
+                                    активных целевых цен: {{ watchlist.active_alert_count }}
+                                </div>
+                            </div>
+                            <span class="badge bg-primary rounded-pill">открыть</span>
+                        </a>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="alert alert-secondary">
+                    Списков пока нет. Создайте первый список и добавьте в него акции.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}

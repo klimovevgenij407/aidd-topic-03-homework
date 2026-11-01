@@ -1,0 +1,126 @@
+{% extends "dashboard/base.html" %}
+{% load crispy_forms_tags %}
+
+{% block title %}<title>{{ portfolio.name }} — портфель</title>{% endblock %}
+
+{% block content %}
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h1 class="h3 mb-1">{{ portfolio.name }}</h1>
+            <a href="{% url 'portfolio:index' %}" class="text-muted small">← все портфели</a>
+        </div>
+        <form method="post" action="{% url 'portfolio:delete' portfolio.pk %}">
+            {% csrf_token %}
+            <button class="btn btn-outline-danger btn-sm" type="submit">Удалить портфель</button>
+        </form>
+    </div>
+
+    <div class="row row-cols-2 row-cols-lg-5 g-3 mb-4">
+        <div class="col"><div class="card h-100"><div class="card-body">
+            <div class="text-muted small">Стоимость портфеля</div>
+            <div class="h5 mb-0">{{ valuation.equity|floatformat:2 }}</div>
+        </div></div></div>
+        <div class="col"><div class="card h-100"><div class="card-body">
+            <div class="text-muted small">Свободные средства</div>
+            <div class="h5 mb-0">{{ valuation.cash|floatformat:2 }}</div>
+        </div></div></div>
+        <div class="col"><div class="card h-100"><div class="card-body">
+            <div class="text-muted small">Рыночная стоимость акций</div>
+            <div class="h5 mb-0">{{ valuation.market_value|floatformat:2 }}</div>
+        </div></div></div>
+        <div class="col"><div class="card h-100"><div class="card-body">
+            <div class="text-muted small">Общая прибыль</div>
+            <div class="h5 mb-0 {% if valuation.total_pnl < 0 %}text-danger{% else %}text-success{% endif %}">
+                {{ valuation.total_pnl|floatformat:2 }}
+            </div>
+        </div></div></div>
+        <div class="col"><div class="card h-100"><div class="card-body">
+            <div class="text-muted small">Доходность</div>
+            <div class="h5 mb-0 {% if valuation.return_pct < 0 %}text-danger{% else %}text-success{% endif %}">
+                {{ valuation.return_pct|floatformat:2 }} %
+            </div>
+        </div></div></div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-7">
+            <h2 class="h5">Позиции</h2>
+            {% if valuation.positions %}
+                <div class="table-responsive">
+                    <table class="table table-striped align-middle">
+                        <thead>
+                        <tr>
+                            <th>Акция</th>
+                            <th>Кол-во</th>
+                            <th>Средняя цена</th>
+                            <th>Текущая цена</th>
+                            <th>Стоимость</th>
+                            <th>P&L</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for position in valuation.positions %}
+                            <tr>
+                                <td>
+                                    <a href="{% url 'dashboard:detail' position.share.pk %}">
+                                        {{ position.share.ticker }}
+                                    </a>
+                                </td>
+                                <td>{{ position.quantity|floatformat:4 }}</td>
+                                <td>{{ position.avg_price|floatformat:2 }}</td>
+                                <td>{{ position.current_price|floatformat:2 }}</td>
+                                <td>{{ position.market_value|floatformat:2 }}</td>
+                                <td class="{% if position.unrealized_pnl < 0 %}text-danger{% else %}text-success{% endif %}">
+                                    {{ position.unrealized_pnl|floatformat:2 }}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <p class="text-muted small">
+                    Нереализованная прибыль: {{ valuation.unrealized_pnl|floatformat:2 }} ·
+                    реализованная прибыль: {{ valuation.realized_pnl|floatformat:2 }}
+                </p>
+            {% else %}
+                <div class="alert alert-secondary">Позиций пока нет.</div>
+            {% endif %}
+
+            <h2 class="h5 mt-4">История операций</h2>
+            {% if transactions %}
+                <div class="table-responsive">
+                    <table class="table table-sm table-striped">
+                        <thead><tr><th>Время</th><th>Операция</th><th>Акция</th><th>Кол-во</th><th>Цена</th><th>P&L</th></tr></thead>
+                        <tbody>
+                        {% for transaction in transactions %}
+                            <tr>
+                                <td>{{ transaction.executed_at }}</td>
+                                <td>{{ transaction.get_side_display }}</td>
+                                <td>{{ transaction.share.ticker }}</td>
+                                <td>{{ transaction.quantity|floatformat:4 }}</td>
+                                <td>{{ transaction.price|floatformat:2 }}</td>
+                                <td>{{ transaction.realized_pnl|floatformat:2 }}</td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-secondary">Операций пока нет.</div>
+            {% endif %}
+        </div>
+
+        <div class="col-lg-5">
+            <div class="card">
+                <div class="card-body">
+                    <h2 class="h5">Новая операция</h2>
+                    <form method="post">
+                        {% csrf_token %}
+                        {{ trade_form|crispy }}
+                        <button class="btn btn-primary" type="submit">Выполнить</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

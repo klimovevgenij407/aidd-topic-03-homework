@@ -1,20 +1,18 @@
-from django.shortcuts import render, redirect
+from datetime import timedelta
+
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.shortcuts import get_object_or_404, render
 from django.urls import reverse_lazy
-from django.views.generic import CreateView, DeleteView, ListView, View, UpdateView
+from django.utils import timezone
+from django.views.generic import CreateView, DeleteView, ListView, UpdateView, View
 
-from .forms import ShareModelForm
-from .models import Share
-from .services.graph import get_graph
-from django.contrib.auth.mixins import UserPassesTestMixin
+from dashboard.forms import ShareModelForm
+from dashboard.models import Share
+from market.charts import build_price_chart
+from market.models import PriceSnapshot
+from market.services import ensure_history, history_stats
 
-
-class IsUserAuthenticatedMixin(UserPassesTestMixin):
-    def test_func(self):
-        return self.request.user.is_authenticated
-
-    @staticmethod
-    def handle_no_permission():
-        return redirect("dashboard:index")
+ALLOWED_HISTORY_PERIODS = (30, 90, 180, 365)
 
 
 class ShareListView(ListView):
@@ -27,18 +25,45 @@ class ShareListView(ListView):
 
 
 class ShareDetailView(View):
+    """Карточка акции с сохранённой историей цен."""
+
     @staticmethod
     def get(request, pk):
-        share = Share.objects.get(id=pk)
+        share = get_object_or_404(Share, pk=pk)
+        try:
+            days = int(request.GET.get("days", 180))
+        except (TypeError, ValueError):
+            days = 180
+        days = days if days in ALLOWED_HISTORY_PERIODS else 180
+
+        ensure_history(share, days=days)
+        start = timezone.localdate() - timedelta(days=days)
+        snapshots = list(
+            PriceSnapshot.objects.filter(
+                share=share, captured_at__date__gte=start
+            ).order_by("captured_at")
+        )
+        stats = history_stats(snapshots)
+        chart = build_price_chart(
+            snapshots, title=f"{share.ticker}: динамика за {days} дней"
+        )
+        recent_snapshots = list(reversed(snapshots[-30:]))
 
         return render(
             request,
             "dashboard/detail.html",
-            {"plot_div": get_graph(share), "share": share},
+            {
+                "share": share,
+                "plot_div": chart,
+                "stats": stats,
+                "days": days,
+                "periods": ALLOWED_HISTORY_PERIODS,
+                "recent_snapshots": recent_snapshots,
+            },
         )
 
 
-class ShareCreateView(IsUserAuthenticatedMixin, CreateView):
+class ShareCreateView(LoginRequiredMixin, CreateView):
     """Добавление инструмента"""
 
     template_name = "dashboard/create.html"
@@ -46,7 +71,7 @@ class ShareCreateView(IsUserAuthenticatedMixin, CreateView):
     success_url = reverse_lazy("dashboard:index")
 
 
-class ShareUpdateView(IsUserAuthenticatedMixin, UpdateView):
+class ShareUpdateView(LoginRequiredMixin, UpdateView):
     """Редактирование инструмента"""
 
     model = Share
@@ -55,8 +80,8 @@ class ShareUpdateView(IsUserAuthenticatedMixin, UpdateView):
     success_url = reverse_lazy("dashboard:index")
 
 
-class ShareDeleteView(IsUserAuthenticatedMixin, DeleteView):
-    """Удаление задачи"""
+class ShareDeleteView(LoginRequiredMixin, DeleteView):
+    """Удаление инструмента"""
 
     model = Share
     template_name = "dashboard/delete.html"

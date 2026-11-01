@@ -1,32 +1,107 @@
 {% extends "dashboard/base.html" %}
 
-{% block title %}
-<title>Детальная информация</title>
-{% endblock %}
+{% block title %}<title>{{ share.ticker }} — детальная информация</title>{% endblock %}
 
 {% block content %}
-    <div class="row">
-    <div class="col3"></div>
-    <div class="col3">
-        Инструмент: {{ share.name }} <br>
-        Текущая цена: {{ share.last_price }} {{ share.currency }} <br>
-        Время последнего обновления: {{ share.updated_at }}
+    <div class="d-flex justify-content-between align-items-start mb-3">
+        <div>
+            <h1 class="h3 mb-1">{{ share.name }} ({{ share.ticker }})</h1>
+            <p class="text-muted mb-0">
+                ISIN {{ share.isin }} · FIGI {{ share.figi }} · {{ share.currency|upper }}
+            </p>
+        </div>
+        <div class="text-end">
+            {% if share.last_price is not None %}
+                <div class="h4 mb-1">
+                    {{ share.last_price|floatformat:2 }} {{ share.currency }}
+                    {% if share.is_trend_high %}
+                        <span class="badge bg-success">рост</span>
+                    {% else %}
+                        <span class="badge bg-danger">снижение</span>
+                    {% endif %}
+                </div>
+            {% else %}
+                <div class="h4 mb-1 text-muted">цена не загружена</div>
+            {% endif %}
+            <div class="text-muted small">Обновлено: {{ share.updated_at|default:"—" }}</div>
+        </div>
     </div>
-    <div class="col3"></div>
+
+    <div class="d-flex flex-wrap gap-2 mb-3">
+        {% for period in periods %}
+            <a href="?days={{ period }}"
+               class="btn btn-sm {% if period == days %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                {{ period }} дней
+            </a>
+        {% endfor %}
+        {% if user.is_authenticated %}
+            <a href="{% url 'dashboard:update' share.id %}" class="btn btn-sm btn-secondary ms-auto">Изменить</a>
+            <a href="{% url 'dashboard:delete' share.id %}" class="btn btn-sm btn-danger">Удалить</a>
+        {% endif %}
     </div>
 
+    {% if stats.count %}
+        <div class="row row-cols-2 row-cols-md-4 g-3 mb-3">
+            <div class="col">
+                <div class="card h-100"><div class="card-body">
+                    <div class="text-muted small">Цена в начале периода</div>
+                    <div class="h5 mb-0">{{ stats.first|floatformat:2 }} {{ share.currency }}</div>
+                </div></div>
+            </div>
+            <div class="col">
+                <div class="card h-100"><div class="card-body">
+                    <div class="text-muted small">Цена в конце периода</div>
+                    <div class="h5 mb-0">{{ stats.last|floatformat:2 }} {{ share.currency }}</div>
+                </div></div>
+            </div>
+            <div class="col">
+                <div class="card h-100"><div class="card-body">
+                    <div class="text-muted small">Абсолютное изменение</div>
+                    <div class="h5 mb-0 {% if stats.change < 0 %}text-danger{% else %}text-success{% endif %}">
+                        {{ stats.change|floatformat:2 }} {{ share.currency }}
+                    </div>
+                </div></div>
+            </div>
+            <div class="col">
+                <div class="card h-100"><div class="card-body">
+                    <div class="text-muted small">Изменение, %</div>
+                    <div class="h5 mb-0 {% if stats.change_pct < 0 %}text-danger{% else %}text-success{% endif %}">
+                        {% if stats.change_pct is not None %}{{ stats.change_pct|floatformat:2 }} %{% else %}—{% endif %}
+                    </div>
+                </div></div>
+            </div>
+        </div>
 
-      <div class="row mt-3">
-    <div class="col3"></div>
-    <div class="col3">
-    <h5>Исторические данные: </h5>
- {% autoescape off %}
-  {{ plot_div }}
-  {% endautoescape %}
-    </div>
-    <div class="col3"></div>
-    </div>
+        <div class="card mb-4">
+            <div class="card-body">
+                <h2 class="h5">Исторические данные</h2>
+                {% autoescape off %}{{ plot_div }}{% endautoescape %}
+                <p class="text-muted small mb-0">
+                    Минимум: {{ stats.min|floatformat:2 }} · максимум: {{ stats.max|floatformat:2 }} ·
+                    точек: {{ stats.count }}
+                </p>
+            </div>
+        </div>
 
-
-
+        <h2 class="h5">Последние сохранённые цены</h2>
+        <div class="table-responsive">
+            <table class="table table-sm table-striped">
+                <thead><tr><th>Момент</th><th>Цена</th><th>Источник</th></tr></thead>
+                <tbody>
+                {% for snapshot in recent_snapshots %}
+                    <tr>
+                        <td>{{ snapshot.captured_at }}</td>
+                        <td>{{ snapshot.price|floatformat:2 }} {{ share.currency }}</td>
+                        <td>{{ snapshot.source }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="alert alert-warning">
+            История цен недоступна. Проверьте настройки провайдера рыночных данных
+            и выполните <code>python manage.py sync_history</code>.
+        </div>
+    {% endif %}
 {% endblock %}

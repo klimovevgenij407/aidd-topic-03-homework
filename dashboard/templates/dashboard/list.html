@@ -1,88 +1,80 @@
 {% extends "dashboard/base.html" %}
 
-{% block title %}
-    <title>Список акций</title>
-{% endblock %}
+{% block title %}<title>Список акций</title>{% endblock %}
 
 {% block content %}
-
-    {% if user.is_authenticated %}
-        <div>
-            <a href="{% url 'dashboard:create' %}" class="btn btn-primary">Добавить</a>
-        </div>
-    {% endif %}
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1 class="h3 mb-0">Акции</h1>
+        {% if user.is_authenticated %}
+            <a href="{% url 'dashboard:create' %}" class="btn btn-primary">Добавить акцию</a>
+        {% endif %}
+    </div>
 
     {% if share_list %}
-        <table class="table table-striped">
-            <thead>
-            <tr>
-                <th scope="col">Тикер</th>
-                <th scope="col">Название</th>
-                <th scope="col">ISIN</th>
-                <th scope="col">Текущая цена</th>
-                {% if user.is_authenticated %}
-                    <th scope="col">Управление</th>
-                {% endif %}
-            </tr>
-            </thead>
-            <tbody>
-
-            {% for share in share_list %}
+        <div class="table-responsive">
+            <table class="table table-striped align-middle">
+                <thead>
                 <tr>
-                    <td><a href="{% url 'dashboard:detail' share.id %}"> {{share.ticker}} </a></td>
-                    <td>{{share.name}}</td>
-                    <td>{{share.isin}}</td>
-                    {%  if  share.is_trend_high %}
-                        <td style="background-color: mediumseagreen">
-                            {%  else  %}
-                        <td style="background-color: palevioletred">
-                    {% endif %}
-                    {{share.last_price}} {{ share.currency }}</td>
-                    {% if user.is_authenticated %}
-                        <td>
-                            <a href="{% url 'dashboard:update' share.id %}" class="btn btn-secondary">
-                                Редактировать
-                            </a>
-                            <a href="{% url 'dashboard:delete' share.id %}" class="btn btn-danger">
-                                Удалить
-                            </a>
-                        </td>
-                    {% endif %}
-
+                    <th scope="col">Тикер</th>
+                    <th scope="col">Название</th>
+                    <th scope="col">ISIN</th>
+                    <th scope="col">Текущая цена</th>
+                    <th scope="col">Обновлено</th>
+                    <th scope="col"></th>
                 </tr>
-            {% endfor %}
-
-
-
-            </tbody>
-        </table>
-
-        <div class="btn-group" role="group" aria-label="Item pagination">
-            {% if page_obj.has_previous %}
-                <a href="?page={{ page_obj.previous_page_number }}" class="btn btn-outline-primary">&laquo;</a>
-            {% endif %}
-
-            {% for page_number in page_obj.paginator.page_range %}
-                {% if page_obj.number == page_number %}
-                    <button class="btn btn-outline-primary active">
-                        <span>{{ page_number }} <span class="sr-only">(current)</span></span>
-                    </button>
-                {% else %}
-                    <a href="?page={{ page_number }}" class="btn btn-outline-primary">
-                        {{ page_number }}
-                    </a>
-                {% endif %}
-            {% endfor %}
-
-            {% if page_obj.has_next %}
-                <a href="?page={{ page_obj.next_page_number }}" class="btn btn-outline-primary">&raquo;</a>
-            {% endif %}
+                </thead>
+                <tbody>
+                {% for share in share_list %}
+                    <tr>
+                        <td><a href="{% url 'dashboard:detail' share.id %}">{{ share.ticker }}</a></td>
+                        <td>{{ share.name }}</td>
+                        <td>{{ share.isin }}</td>
+                        <td>
+                            {% if share.last_price is not None %}
+                                <span class="badge {% if share.is_trend_high %}bg-success{% else %}bg-danger{% endif %}">
+                                    {{ share.last_price|floatformat:2 }} {{ share.currency }}
+                                </span>
+                            {% else %}
+                                <span class="text-muted">нет данных</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ share.updated_at|default:"—" }}</td>
+                        <td class="text-end">
+                            <a href="{% url 'dashboard:detail' share.id %}" class="btn btn-sm btn-outline-secondary">
+                                История
+                            </a>
+                            {% if user.is_authenticated %}
+                                <a href="{% url 'dashboard:update' share.id %}" class="btn btn-sm btn-secondary">Изменить</a>
+                                <a href="{% url 'dashboard:delete' share.id %}" class="btn btn-sm btn-danger">Удалить</a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
         </div>
 
-
+        {% if page_obj.paginator.num_pages > 1 %}
+            <div class="btn-group" role="group" aria-label="Постраничная навигация">
+                {% if page_obj.has_previous %}
+                    <a href="?page={{ page_obj.previous_page_number }}" class="btn btn-outline-primary">&laquo;</a>
+                {% endif %}
+                {% for page_number in page_obj.paginator.page_range %}
+                    {% if page_obj.number == page_number %}
+                        <button class="btn btn-outline-primary active" type="button">{{ page_number }}</button>
+                    {% else %}
+                        <a href="?page={{ page_number }}" class="btn btn-outline-primary">{{ page_number }}</a>
+                    {% endif %}
+                {% endfor %}
+                {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}" class="btn btn-outline-primary">&raquo;</a>
+                {% endif %}
+            </div>
+        {% endif %}
     {% else %}
-        <p>Акций еще нет</p>
+        <div class="alert alert-secondary">
+            Акций ещё нет. Выполните <code>python manage.py add_shares</code>
+            или <code>python manage.py seed_demo</code>.
+        </div>
     {% endif %}
-
-
 {% endblock %}

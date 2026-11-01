@@ -1,22 +1,24 @@
 {% extends "user/base.html" %}
 {% block content %}
-<form  action="{% url 'user:auth'%}" method="POST">
+<form action="{% url 'user:auth' %}" method="POST">
     {% csrf_token %}
     <h1 class="h3 mb-3 fw-normal">Войдите в профиль</h1>
 
+    {% if form.non_field_errors %}
+        <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+    {% endif %}
+
     <div>
         {{ form.email }}
+        {{ form.email.errors }}
     </div>
     <div>
         {{ form.password }}
-    </div>
-    <div>
-        {{ error }}
+        {{ form.password.errors }}
     </div>
 
     <button class="w-100 btn btn-lg btn-primary" type="submit">Войти</button>
     <p class="text-center text-uppercase text-muted pt-3">--- Или ---</p>
     <a href="{% url 'user:registration' %}" class="w-100 btn btn-lg btn-outline-primary">Зарегистрироваться</a>
 </form>
- {% endblock %}
-
+{% endblock %}

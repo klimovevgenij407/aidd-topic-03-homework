@@ -1,0 +1,5 @@
+# Official T-Bank Invest API SDK (invest-python):
+# https://opensource.tbank.ru/invest/invest-python
+# Installs the `tinkoff.invest` package. Optional: the application falls back to
+# the deterministic synthetic market data provider when the SDK or token is absent.
+tinkoff-investments>=0.2.0b59

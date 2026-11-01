@@ -11,8 +11,8 @@ app.config_from_object("django.conf:settings", namespace="CELERY")
 app.autodiscover_tasks()
 
 app.conf.beat_schedule = {
-    "add-every-5-min": {
-        "task": "dashboard.tasks.update_last_price",
-        "schedule": 10.0,
+    "refresh-market-data-every-minute": {
+        "task": "market.tasks.refresh_market_data",
+        "schedule": 60.0,
     },
 }

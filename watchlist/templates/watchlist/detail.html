@@ -1,0 +1,102 @@
+{% extends "dashboard/base.html" %}
+{% load crispy_forms_tags %}
+
+{% block title %}<title>{{ watchlist.name }} — наблюдение</title>{% endblock %}
+
+{% block content %}
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h1 class="h3 mb-1">{{ watchlist.name }}</h1>
+            <a href="{% url 'watchlist:index' %}" class="text-muted small">← все списки</a>
+        </div>
+        <form method="post" action="{% url 'watchlist:delete' watchlist.pk %}">
+            {% csrf_token %}
+            <button class="btn btn-outline-danger btn-sm" type="submit">Удалить список</button>
+        </form>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <h2 class="h5">Добавить акцию</h2>
+            <form method="post" class="row g-2 align-items-end">
+                {% csrf_token %}
+                <div class="col-md-5">{{ item_form.share|as_crispy_field }}</div>
+                <div class="col-md-5">{{ item_form.note|as_crispy_field }}</div>
+                <div class="col-md-2">
+                    <button class="btn btn-primary w-100" type="submit">Добавить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% if items %}
+        {% for item in items %}
+            <div class="card mb-3">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h3 class="h5 mb-1">
+                                <a href="{% url 'dashboard:detail' item.share.pk %}">
+                                    {{ item.share.ticker }}
+                                </a>
+                                — {{ item.share.name }}
+                            </h3>
+                            <div class="text-muted small">
+                                {% if item.share.last_price is not None %}
+                                    Текущая цена: {{ item.share.last_price|floatformat:2 }} {{ item.share.currency }}
+                                {% else %}
+                                    Цена ещё не загружена
+                                {% endif %}
+                                {% if item.note %} · {{ item.note }}{% endif %}
+                            </div>
+                        </div>
+                        <form method="post" action="{% url 'watchlist:item-delete' item.pk %}">
+                            {% csrf_token %}
+                            <button class="btn btn-sm btn-outline-danger" type="submit">Убрать</button>
+                        </form>
+                    </div>
+
+                    {% if item.alerts.all %}
+                        <table class="table table-sm mt-3 mb-2">
+                            <thead><tr><th>Условие</th><th>Порог</th><th>Статус</th><th></th></tr></thead>
+                            <tbody>
+                            {% for alert in item.alerts.all %}
+                                <tr>
+                                    <td>{{ alert.get_condition_display }}</td>
+                                    <td>{{ alert.target_price|floatformat:2 }} {{ item.share.currency }}</td>
+                                    <td>
+                                        {% if alert.is_active %}
+                                            <span class="badge bg-success">активна</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">сработала / выключена</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end">
+                                        <form method="post" action="{% url 'watchlist:alert-toggle' alert.pk %}">
+                                            {% csrf_token %}
+                                            <button class="btn btn-sm btn-outline-secondary" type="submit">
+                                                {% if alert.is_active %}Выключить{% else %}Включить{% endif %}
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    {% endif %}
+
+                    <form method="post" action="{% url 'watchlist:alert-create' item.pk %}" class="row g-2 align-items-end mt-2">
+                        {% csrf_token %}
+                        <div class="col-md-5">{{ alert_form.condition|as_crispy_field }}</div>
+                        <div class="col-md-4">{{ alert_form.target_price|as_crispy_field }}</div>
+                        <div class="col-md-3">
+                            <button class="btn btn-outline-primary w-100" type="submit">Добавить порог</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="alert alert-secondary">В списке пока нет акций.</div>
+    {% endif %}
+{% endblock %}

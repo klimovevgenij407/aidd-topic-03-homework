@@ -1,5 +1,9 @@
 from django.urls import include, path
 
-from .router import router
+from dashboard.api.v1.views import SharePriceHistoryView
+from dashboard.api.v1.router import router
 
-urlpatterns = [path("", include(router.urls))]
+urlpatterns = [
+    path("price-history/", SharePriceHistoryView.as_view(), name="price-history"),
+    path("", include(router.urls)),
+]

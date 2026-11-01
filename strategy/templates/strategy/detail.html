@@ -1,0 +1,172 @@
+{% extends "dashboard/base.html" %}
+{% load crispy_forms_tags %}
+
+{% block title %}<title>{{ strategy.name }} — стратегия</title>{% endblock %}
+
+{% block content %}
+    <div class="d-flex justify-content-between align-items-start mb-3">
+        <div>
+            <h1 class="h3 mb-1">{{ strategy.name }}</h1>
+            <div class="text-muted">
+                {{ strategy.share.name }} ({{ strategy.share.ticker }}) ·
+                {% if strategy.is_active %}
+                    <span class="badge bg-success">активна</span>
+                {% else %}
+                    <span class="badge bg-secondary">выключена</span>
+                {% endif %}
+            </div>
+            <a href="{% url 'strategy:index' %}" class="text-muted small">← все стратегии</a>
+        </div>
+        <div class="d-flex gap-2">
+            <form method="post" action="{% url 'strategy:run' strategy.pk %}">
+                {% csrf_token %}
+                <button class="btn btn-primary btn-sm" type="submit">Проверить сейчас</button>
+            </form>
+            <form method="post" action="{% url 'strategy:toggle' strategy.pk %}">
+                {% csrf_token %}
+                <button class="btn btn-outline-secondary btn-sm" type="submit">
+                    {% if strategy.is_active %}Выключить{% else %}Включить{% endif %}
+                </button>
+            </form>
+            <form method="post" action="{% url 'strategy:delete' strategy.pk %}">
+                {% csrf_token %}
+                <button class="btn btn-outline-danger btn-sm" type="submit">Удалить</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="row row-cols-2 row-cols-lg-5 g-3 mb-4">
+        <div class="col"><div class="card h-100"><div class="card-body">
+            <div class="text-muted small">Стоимость</div>
+            <div class="h5 mb-0">{{ metrics.equity|floatformat:2 }}</div>
+        </div></div></div>
+        <div class="col"><div class="card h-100"><div class="card-body">
+            <div class="text-muted small">Свободные средства</div>
+            <div class="h5 mb-0">{{ metrics.cash|floatformat:2 }}</div>
+        </div></div></div>
+        <div class="col"><div class="card h-100"><div class="card-body">
+            <div class="text-muted small">Позиция</div>
+            <div class="h5 mb-0">{{ metrics.quantity|floatformat:4 }}</div>
+            <div class="text-muted small">средняя {{ metrics.avg_price|floatformat:2 }}</div>
+        </div></div></div>
+        <div class="col"><div class="card h-100"><div class="card-body">
+            <div class="text-muted small">Общая прибыль</div>
+            <div class="h5 mb-0 {% if metrics.total_pnl < 0 %}text-danger{% else %}text-success{% endif %}">
+                {{ metrics.total_pnl|floatformat:2 }}
+            </div>
+        </div></div></div>
+        <div class="col"><div class="card h-100"><div class="card-body">
+            <div class="text-muted small">Доходность</div>
+            <div class="h5 mb-0 {% if metrics.return_pct < 0 %}text-danger{% else %}text-success{% endif %}">
+                {{ metrics.return_pct|floatformat:2 }} %
+            </div>
+        </div></div></div>
+    </div>
+
+    <p class="text-muted small">
+        Текущая цена: {{ metrics.current_price|floatformat:2 }} ·
+        рыночная стоимость: {{ metrics.market_value|floatformat:2 }} ·
+        нереализованная прибыль: {{ metrics.unrealized_pnl|floatformat:2 }} ·
+        реализованная прибыль: {{ metrics.realized_pnl|floatformat:2 }} ·
+        сделок: {{ metrics.trade_count }}
+    </p>
+
+    <div class="row g-4">
+        <div class="col-lg-7">
+            <h2 class="h5">Правила</h2>
+            {% if rules %}
+                <div class="table-responsive">
+                    <table class="table table-striped align-middle">
+                        <thead><tr><th>Операция</th><th>Условие</th><th>Порог</th><th>Кол-во</th><th>Статус</th><th></th></tr></thead>
+                        <tbody>
+                        {% for rule in rules %}
+                            <tr>
+                                <td>{{ rule.get_side_display }}</td>
+                                <td>{{ rule.get_condition_display }}</td>
+                                <td>{{ rule.threshold|floatformat:2 }}</td>
+                                <td>{{ rule.quantity|floatformat:4 }}</td>
+                                <td>
+                                    {% if rule.is_active %}
+                                        <span class="badge bg-success">активно</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">выключено</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">
+                                    <div class="d-flex gap-1 justify-content-end">
+                                        <form method="post" action="{% url 'strategy:rule-toggle' rule.pk %}">
+                                            {% csrf_token %}
+                                            <button class="btn btn-sm btn-outline-secondary" type="submit">
+                                                {% if rule.is_active %}Выключить{% else %}Включить{% endif %}
+                                            </button>
+                                        </form>
+                                        <form method="post" action="{% url 'strategy:rule-delete' rule.pk %}">
+                                            {% csrf_token %}
+                                            <button class="btn btn-sm btn-outline-danger" type="submit">Удалить</button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-secondary">Правил пока нет.</div>
+            {% endif %}
+
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h2 class="h5">Добавить правило</h2>
+                    <form method="post" class="row g-2 align-items-end">
+                        {% csrf_token %}
+                        <div class="col-md-4">{{ rule_form.side|as_crispy_field }}</div>
+                        <div class="col-md-4">{{ rule_form.condition|as_crispy_field }}</div>
+                        <div class="col-md-4">{{ rule_form.threshold|as_crispy_field }}</div>
+                        <div class="col-md-4">{{ rule_form.quantity|as_crispy_field }}</div>
+                        <div class="col-md-8">
+                            <button class="btn btn-primary" type="submit">Добавить</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <h2 class="h5">Журнал сделок</h2>
+            {% if trades %}
+                <div class="table-responsive">
+                    <table class="table table-sm table-striped">
+                        <thead><tr><th>Время</th><th>Операция</th><th>Кол-во</th><th>Цена</th><th>P&L</th><th>Средства после</th></tr></thead>
+                        <tbody>
+                        {% for trade in trades %}
+                            <tr>
+                                <td>{{ trade.executed_at }}</td>
+                                <td>{{ trade.get_side_display }}</td>
+                                <td>{{ trade.quantity|floatformat:4 }}</td>
+                                <td>{{ trade.price|floatformat:2 }}</td>
+                                <td>{{ trade.realized_pnl|floatformat:2 }}</td>
+                                <td>{{ trade.cash_after|floatformat:2 }}</td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-secondary">Сделок пока нет.</div>
+            {% endif %}
+        </div>
+
+        <div class="col-lg-5">
+            <div class="card">
+                <div class="card-body">
+                    <h2 class="h5">Как это работает</h2>
+                    <p class="small text-muted mb-0">
+                        При каждом обновлении рыночной цены активные правила проверяются
+                        на текущей цене. Если условие выполнено, моделируется виртуальная
+                        сделка; повторно на том же снимке цены правило не срабатывает.
+                        Кнопка «Проверить сейчас» запускает проверку вручную.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
