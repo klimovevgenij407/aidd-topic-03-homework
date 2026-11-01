@@ -31,7 +31,7 @@ def env_list(name: str, default: str = "") -> list[str]:
 
 SECRET_KEY = os.getenv(
     "DJANGO_SECRET_KEY",
-    "dev-insecure-secret-key-change-me-in-production",
+    "dev-insecure-secret-key-change-me-in-production-0123456789",
 )
 
 DEBUG = env_bool("DJANGO_DEBUG", True)
@@ -235,4 +235,10 @@ if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     SESSION_COOKIE_SECURE = env_bool("SESSION_COOKIE_SECURE", True)
     CSRF_COOKIE_SECURE = env_bool("CSRF_COOKIE_SECURE", True)
-    SECURE_SSL_REDIRECT = env_bool("SECURE_SSL_REDIRECT", False)
+    SECURE_SSL_REDIRECT = env_bool("SECURE_SSL_REDIRECT", True)
+    SECURE_HSTS_SECONDS = int(os.getenv("SECURE_HSTS_SECONDS", "31536000"))
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = env_bool(
+        "SECURE_HSTS_INCLUDE_SUBDOMAINS",
+        True,
+    )
+    SECURE_HSTS_PRELOAD = env_bool("SECURE_HSTS_PRELOAD", False)
