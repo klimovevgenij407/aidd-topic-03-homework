@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+
+{% block title %}{{ watchlist.name }}{% endblock %}
+
+{% block content %}
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h1 class="h3 mb-1">{{ watchlist.name }}</h1>
+            <div class="text-muted">Список наблюдения</div>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'monitoring:watchlist_update' watchlist.pk %}" class="btn btn-outline-secondary">Изменить</a>
+            <a href="{% url 'monitoring:watchlist_delete' watchlist.pk %}" class="btn btn-outline-danger">Удалить</a>
+            <a href="{% url 'monitoring:watchlist_list' %}" class="btn btn-outline-primary">К списку</a>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">Добавить акцию</div>
+        <div class="card-body">
+            <form method="post" action="{% url 'monitoring:watchlist_item_create' watchlist.pk %}" novalidate>
+                {% csrf_token %}
+                {{ item_form|crispy }}
+                <button type="submit" class="btn btn-primary">Добавить</button>
+            </form>
+        </div>
+    </div>
+
+    {% if items %}
+        <div class="table-responsive">
+            <table class="table table-striped align-middle">
+                <thead>
+                <tr>
+                    <th>Акция</th>
+                    <th>Целевая цена</th>
+                    <th>Условие</th>
+                    <th>Текущая цена</th>
+                    <th>Состояние</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for item in items %}
+                    <tr>
+                        <td><a href="{% url 'dashboard:detail' item.share.pk %}">{{ item.share.ticker }}</a> — {{ item.share.name }}</td>
+                        <td>{{ item.target_price|floatformat:2 }} {{ item.share.currency }}</td>
+                        <td>{{ item.get_direction_display }}</td>
+                        <td>
+                            {% if item.share.last_price is not None %}
+                                {{ item.share.last_price|floatformat:2 }} {{ item.share.currency }}
+                            {% else %}—{% endif %}
+                        </td>
+                        <td>
+                            {% if not item.is_active %}
+                                <span class="badge bg-secondary">Выключено</span>
+                            {% elif item.condition_met %}
+                                <span class="badge bg-success">Условие выполнено</span>
+                            {% else %}
+                                <span class="badge bg-light text-dark">Ожидание</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <a href="{% url 'monitoring:watchlist_item_update' item.pk %}" class="btn btn-sm btn-outline-secondary">Изменить</a>
+                            <a href="{% url 'monitoring:watchlist_item_delete' item.pk %}" class="btn btn-sm btn-outline-danger">Удалить</a>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="alert alert-info">В списке пока нет акций.</div>
+    {% endif %}
+{% endblock %}

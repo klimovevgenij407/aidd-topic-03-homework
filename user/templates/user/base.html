@@ -1,23 +1,13 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Investing / Авторизация</title>
+{% extends "base.html" %}
 
-    {% load static %}
-    <link href="{% static 'user/css/bootstrap.min.css'%}" rel="stylesheet">
-    <link href="{% static 'user/css/signin.css'%}" rel="stylesheet">
-
-</head>
-<body>
-
-<main class="form-signin">
-
-    {% block content %}
-    {% endblock %}
-
-</main>
-
-
-</body>
-</html>
+{% block content %}
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card shadow-sm">
+                <div class="card-body p-4">
+                    {% block auth_content %}{% endblock %}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

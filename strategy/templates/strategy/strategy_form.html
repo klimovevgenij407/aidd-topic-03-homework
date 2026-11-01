@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+
+{% block title %}{% if object %}Редактирование стратегии{% else %}Новая стратегия{% endif %}{% endblock %}
+
+{% block content %}
+    <h1 class="h3 mb-3">{% if object %}Редактирование стратегии{% else %}Новая стратегия{% endif %}</h1>
+    <div class="row">
+        <div class="col-md-7">
+            <form method="post" novalidate>
+                {% csrf_token %}
+                {{ form|crispy }}
+                <button type="submit" class="btn btn-primary">Сохранить</button>
+                <a href="{% url 'strategy:strategy_list' %}" class="btn btn-outline-secondary">Отмена</a>
+            </form>
+        </div>
+    </div>
+{% endblock %}

@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block title %}Удаление списка{% endblock %}
+
+{% block content %}
+    <h1 class="h3 mb-3">Удаление списка наблюдения</h1>
+    <form method="post">
+        {% csrf_token %}
+        <p>Удалить список <b>«{{ watchlist.name }}»</b> и все его элементы?</p>
+        <button type="submit" class="btn btn-danger">Удалить</button>
+        <a href="{% url 'monitoring:watchlist_detail' watchlist.pk %}" class="btn btn-outline-secondary">Отмена</a>
+    </form>
+{% endblock %}

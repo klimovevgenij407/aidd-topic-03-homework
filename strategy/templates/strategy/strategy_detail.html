@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}{{ strategy.name }}{% endblock %}
+
+{% block content %}
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h1 class="h3 mb-1">{{ strategy.name }}</h1>
+            <div class="text-muted">
+                {{ strategy.share.ticker }} · покупка ≤ {{ strategy.buy_below|floatformat:2 }} ·
+                продажа ≥ {{ strategy.sell_above|floatformat:2 }}
+            </div>
+        </div>
+        <div class="d-flex gap-2">
+            <form method="post" action="{% url 'strategy:strategy_toggle' strategy.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="btn {% if strategy.is_active %}btn-outline-warning{% else %}btn-outline-success{% endif %}">
+                    {% if strategy.is_active %}Выключить{% else %}Включить{% endif %}
+                </button>
+            </form>
+            <a href="{% url 'strategy:strategy_update' strategy.pk %}" class="btn btn-outline-secondary">Изменить</a>
+            <a href="{% url 'strategy:strategy_delete' strategy.pk %}" class="btn btn-outline-danger">Удалить</a>
+            <a href="{% url 'strategy:strategy_list' %}" class="btn btn-outline-primary">К списку</a>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-2"><div class="card h-100"><div class="card-body"><div class="small text-muted">Капитал</div><div class="fs-5">{{ state.cash|floatformat:2 }}</div></div></div></div>
+        <div class="col-md-2"><div class="card h-100"><div class="card-body"><div class="small text-muted">Позиция</div><div class="fs-5">{{ state.position|floatformat:6 }}</div></div></div></div>
+        <div class="col-md-2"><div class="card h-100"><div class="card-body"><div class="small text-muted">Стоимость</div><div class="fs-5">{{ state.equity|floatformat:2 }}</div></div></div></div>
+        <div class="col-md-2"><div class="card h-100"><div class="card-body"><div class="small text-muted">P&L</div><div class="fs-5 {% if state.pnl < 0 %}text-danger{% else %}text-success{% endif %}">{{ state.pnl|floatformat:2 }}</div></div></div></div>
+        <div class="col-md-2"><div class="card h-100"><div class="card-body"><div class="small text-muted">Доходность</div><div class="fs-5 {% if state.return_percent < 0 %}text-danger{% else %}text-success{% endif %}">{{ state.return_percent|floatformat:2 }}%</div></div></div></div>
+        <div class="col-md-2"><div class="card h-100"><div class="card-body"><div class="small text-muted">Сделок</div><div class="fs-5">{{ state.trades_count }}</div></div></div></div>
+    </div>
+
+    <h2 class="h5">Журнал виртуальных сделок</h2>
+    {% if trades %}
+        <div class="table-responsive">
+            <table class="table table-sm align-middle">
+                <thead><tr><th>Дата</th><th>Операция</th><th>Цена</th><th>Количество</th><th>Причина</th></tr></thead>
+                <tbody>
+                {% for trade in trades %}
+                    <tr>
+                        <td>{{ trade.executed_at|date:"d.m.Y H:i" }}</td>
+                        <td><span class="badge {% if trade.side == 'buy' %}bg-success{% else %}bg-danger{% endif %}">{{ trade.get_side_display }}</span></td>
+                        <td>{{ trade.price|floatformat:2 }}</td>
+                        <td>{{ trade.quantity|floatformat:6 }}</td>
+                        <td class="small text-muted">{{ trade.reason }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="alert alert-info">Сделок пока нет. Симулятор сработает при достижении ценовых условий.</div>
+    {% endif %}
+{% endblock %}

@@ -1,0 +1,13 @@
+# Optional live market-data integration with T-Invest API.
+#
+# The package is distributed through the T-Bank GitLab package registry, not
+# PyPI. The registry currently serves an incomplete TLS chain, so pip needs the
+# trusted-host flag (the official README recommends installing the Ministry of
+# Digital Development CA certificates instead).
+#
+# Install with:
+#   pip install -r requirements-marketdata.txt
+#
+--extra-index-url https://opensource.tbank.ru/api/v4/projects/238/packages/pypi/simple
+--trusted-host opensource.tbank.ru
+t-tech-investments==1.51.0

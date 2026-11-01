@@ -28,3 +28,10 @@ celeryd.pid
 *.log
 .pytest_cache/
 app.logs
+
+# Local database and collected static
+db.sqlite3
+staticfiles/
+.coverage
+htmlcov/
+.ruff_cache/

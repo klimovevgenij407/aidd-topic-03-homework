@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block title %}Удаление портфеля{% endblock %}
+
+{% block content %}
+    <h1 class="h3 mb-3">Удаление портфеля</h1>
+    <form method="post">
+        {% csrf_token %}
+        <p>Удалить портфель <b>«{{ portfolio.name }}»</b> и всю историю операций?</p>
+        <button type="submit" class="btn btn-danger">Удалить</button>
+        <a href="{% url 'portfolio:portfolio_detail' portfolio.pk %}" class="btn btn-outline-secondary">Отмена</a>
+    </form>
+{% endblock %}

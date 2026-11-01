@@ -1,3 +1,5 @@
+"""Celery application and beat schedule for periodic market data updates."""
+
 import os
 
 from celery import Celery
@@ -11,8 +13,8 @@ app.config_from_object("django.conf:settings", namespace="CELERY")
 app.autodiscover_tasks()
 
 app.conf.beat_schedule = {
-    "add-every-5-min": {
+    "update-market-prices-every-5-minutes": {
         "task": "dashboard.tasks.update_last_price",
-        "schedule": 10.0,
+        "schedule": 300.0,
     },
 }
